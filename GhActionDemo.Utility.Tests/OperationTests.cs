@@ -45,7 +45,7 @@ namespace GhActionDemo.Utility.Tests
             Assert.AreEqual(6, res);
         }
 
-        /*
+        
         [TestMethod]
         public void TestMod() {
 
@@ -81,6 +81,6 @@ namespace GhActionDemo.Utility.Tests
             Assert.ThrowsException<System.DivideByZeroException>(()=> ops.Divide(val1,val2));
 
         }
-        */
+        
     }
 }
