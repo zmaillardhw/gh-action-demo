@@ -18,5 +18,10 @@ namespace gh_action_demo
         public int Divide (int item1, int item2) {
             return item1 / item2;
         }
+
+        public int Mod (int item1, int item2) {
+            return item1 % item2;
+        }
+
     }
 }
