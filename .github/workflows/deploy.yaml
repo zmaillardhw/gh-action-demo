@@ -1,0 +1,98 @@
+name: Deploy
+
+on:
+ push:
+   branches:
+     - main
+
+env:
+  DOTNET_VERSION: "3.1.408"
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version-number: ${{ steps.version-env.outputs.version_number}}
+
+    steps:
+      - name: "checkout github action"
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: '0'
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.26.0
+        id: bump-version 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+          RELEASE_BRANCHES: main
+          VERBOSE: false
+
+      - name: Set Output
+        id: version-env
+        shell: bash
+        run: |
+          echo "::set-output name=version_number::${{ steps.bump-version.outputs.new_tag }}"
+
+  deploy-dev:
+    environment: dev
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+      - name: setup dotnet ${{ env.dotnet_version }} environment
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: ${{ env.dotnet_version}}
+
+      - name: "resolve project dependencies using dotnet"
+        shell: bash
+        run: |
+          dotnet build --configuration release /p:Version=${{ needs.version.outputs.version-number }} --output ./output
+
+      - name: "Run Unit Tests"
+        shell: bash
+        run: |
+          dotnet test
+
+
+
+  deploy-test:
+    environment: test
+    runs-on: ubuntu-latest
+    needs: [version, deploy-dev]
+    steps:
+      - name: setup dotnet ${{ env.dotnet_version }} environment
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: ${{ env.dotnet_version}}
+
+      - name: "resolve project dependencies using dotnet"
+        shell: bash
+        run: |
+          dotnet build --configuration release /p:Version=${{ needs.version.outputs.version-number }} --output ./output
+
+      - name: "Run Unit Tests"
+        shell: bash
+        run: |
+          dotnet test
+
+  deploy-prod:
+    environment: prod
+    runs-on: ubuntu-latest
+    needs: [version, deploy-test]
+    steps:
+      - name: setup dotnet ${{ env.dotnet_version }} environment
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: ${{ env.dotnet_version}}
+
+      - name: "resolve project dependencies using dotnet"
+        shell: bash
+        run: |
+          dotnet build --configuration release /p:Version=${{ needs.version.outputs.version-number }} --output ./output
+
+      - name: "Run Unit Tests"
+        shell: bash
+        run: |
+          dotnet test

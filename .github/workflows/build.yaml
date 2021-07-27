@@ -1,0 +1,38 @@
+name: Build and Test
+
+on: [pull_request]
+
+env:
+  DOTNET_VERSION: "3.1.408"
+  MIN_TEST_COVERAGE_PCT: 70
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: "checkout github action"
+        uses: actions/checkout@v2.3.4
+
+      - name: setup dotnet ${{ env.dotnet_version }} environment
+        uses: actions/setup-dotnet@v1.8.1
+        with:
+          dotnet-version: ${{ env.dotnet_version}}
+
+      - name: "resolve project dependencies using dotnet"
+        run: |
+          dotnet build --configuration release  --output ./output
+
+      - name: "Run Unit Tests"
+        shell: bash
+        id: test
+        run: |
+          dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=lcov.info /p:ExcludeByFile="**/Startup.cs%2c**/Models/*%2c/Configuration/*"
+         
+      - name: "Generate Coverage Report"
+        uses: zgosalvez/github-actions-report-lcov@v1
+        with:
+          coverage-files: GhActionDemo.Utility.Tests/lcov*.info
+          minimum-coverage: ${{ env.MIN_TEST_COVERAGE_PCT }}
+          artifact-name: code-coverage-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
